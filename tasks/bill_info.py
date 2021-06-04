@@ -145,9 +145,8 @@ def create_govtrack_xml(bill, options):
             a.set("datetime", utils.format_datetime(action["acted_at"]))
             if action.get("status"):
                 a.set("state", action["status"])
-        if action["type"] == "vetoed":
-            if action.get("pocket"):
-                a.set("pocket", "1")
+        if action["type"] == "vetoed" and action.get("pocket"):
+            a.set("pocket", "1")
         if action.get("text"):
             make_node(a, "text", action["text"])
         if action.get("in_committee"):
@@ -470,27 +469,27 @@ def actions_for(action_list, bill_id, title):
             return False
 
         keep = True
-        if closure["prev"]:
-            if item["sourceSystem"]["code"] == "9":
-                # Date must match previous action..
-                # If both this and previous have a time, the times must match.
-                # The text must approximately match. Sometimes the LOC text has a prefix
-                #   and different whitespace. And they may drop references -- so we'll
-                # use our action_for helper function to drop references from both
-                # prior to the string comparison.
-                if (
-                    item["actionDate"] == closure["prev"]["actionDate"]
-                    and (
-                        item.get("actionTime") == closure["prev"].get("actionTime")
-                        or not item.get("actionTime")
-                        or not closure["prev"].get("actionTime")
-                    )
-                    and action_for(item)["text"]
-                    .replace(" ", "")
-                    .endswith(action_for(closure["prev"])["text"].replace(" ", ""))
-                ):
+        if (
+            closure["prev"]
+            and item["sourceSystem"]["code"] == "9"
+            and item["actionDate"] == closure["prev"]["actionDate"]
+            and (
+                item.get("actionTime") == closure["prev"].get("actionTime")
+                or not item.get("actionTime")
+                or not closure["prev"].get("actionTime")
+            )
+            and action_for(item)["text"]
+            .replace(" ", "")
+            .endswith(action_for(closure["prev"])["text"].replace(" ", ""))
+        ):
+            # Date must match previous action..
+            # If both this and previous have a time, the times must match.
+            # The text must approximately match. Sometimes the LOC text has a prefix
+            #   and different whitespace. And they may drop references -- so we'll
+            # use our action_for helper function to drop references from both
+            # prior to the string comparison.
 
-                    keep = False
+            keep = False
         closure["prev"] = item
         return keep
 
@@ -663,34 +662,6 @@ def related_bills_for(related_bills_list):
             "type": "bill",
             "identified_by": item["relationshipDetails"]["item"][0]["identifiedBy"],
         }
-
-        # Are these THOMAS related bill relation texts gone from the bulk data?
-        reasons = (
-            ("Identical bill identified by (CRS|House|Senate)", "identical"),
-            ("Companion bill", "identical"),
-            (
-                "Related bill (as )?identified by (CRS|the House Clerk's office|House committee|Senate)",
-                "related",
-            ),
-            ("passed in (House|Senate) in lieu of .*", "supersedes"),
-            ("Rule related to .* in (House|Senate)", "rule"),
-            ("This bill has text inserted from .*", "includes"),
-            ("Text from this bill was inserted in .*", "included-in"),
-            ("Bill related to rule .* in House", "ruled-by"),
-            ("This bill caused other related action on .*", "caused-action"),
-            (
-                "Other related action happened to this bill because of .*",
-                "action-caused-by",
-            ),
-            ("Bill that causes .* to be laid on table in House", "caused-action"),
-            ("Bill laid on table by virtue of .* passage in House", "action-caused-by"),
-            ("Bill that caused the virtual passage of .* in House", "caused-action"),
-            ("Bill passed by virtue of .* passage in House", "caused-action-by"),
-            (
-                "Bill on wich enrollment has been corrected by virtue of .* passage in House",
-                "caused-action",
-            ),
-        )
 
     return [build_dict(related_bill) for related_bill in related_bills_list]
 
@@ -915,9 +886,6 @@ def parse_bill_action(action_dict, prev_status, bill_id, title):
             m.group(5),
         )
 
-        # print(line)
-        # print(m.groups())
-
         if re.search(r"Passed House|House Agreed to", motion, re.I):
             pass_fail = "pass"
         elif re.search("(ayes|yeas) had prevailed", line, re.I):
@@ -1044,8 +1012,6 @@ def parse_bill_action(action_dict, prev_status, bill_id, title):
         # needs to know if this was a vote in the originating chamber or not.
         if prev_status == "INTRODUCED" or bill_id.startswith("hres"):
             vote_type = "vote"
-        elif False:
-            vote_type = "vote2"
         else:
             raise Exception(
                 "Need to classify %s as being in the originating chamber or not."

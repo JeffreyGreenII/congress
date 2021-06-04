@@ -36,6 +36,8 @@ import bills
 import vote_info
 import yaml
 
+QUEUE_TO_BEANSTALKD_LOG = "Queued {} to beanstalkd."
+
 __all__ = [
     "patch",
     "process_bill_wrapper",
@@ -83,7 +85,7 @@ def process_bill_wrapper(process_bill):
             try:
                 conn.use(config["tubes"]["bills"])
                 conn.put(bill)
-                logging.warn("Queued {} to beanstalkd.".format(bill))
+                logging.warn(QUEUE_TO_BEANSTALKD_LOG.format(bill))
                 break
             except beanstalkc.SocketError:
                 logging.warn("Lost connection to beanstalkd. Attempting to reconnect.")
@@ -115,7 +117,7 @@ def process_amendment_wrapper(process_amendment):
             try:
                 conn.use(config["tubes"]["amendments"])
                 conn.put(str(amdt))
-                logging.warn("Queued {} to beanstalkd.".format(amdt))
+                logging.warn(QUEUE_TO_BEANSTALKD_LOG.format(amdt))
                 break
             except beanstalkc.SocketError:
                 logging.warn("Lost connection to beanstalkd. Attempting to reconnect.")
@@ -144,7 +146,7 @@ def output_vote_wrapper(output_vote):
             try:
                 conn.use(config["tubes"]["votes"])
                 conn.put(vote["vote_id"])
-                logging.warn("Queued {} to beanstalkd.".format(vote["vote_id"]))
+                logging.warn(QUEUE_TO_BEANSTALKD_LOG.format(vote["vote_id"]))
                 break
             except beanstalkc.SocketError:
                 logging.warn("Lost connection to beanstalkd. Attempting to reconnect.")
