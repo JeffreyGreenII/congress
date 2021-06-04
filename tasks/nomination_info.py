@@ -3,7 +3,7 @@ import logging
 import re
 from datetime import datetime
 
-import utils
+from tasks import utils
 from lxml.html import fromstring
 
 # can be run on its own, just require a nomination_id (e.g. PN2094-112)
@@ -16,7 +16,7 @@ def run(options):
 		result = fetch_nomination(nomination_id, options)
 		logging.warn("\n%s" % result)
 	else:
-		logging.error("To run this task directly, supply a bill_id.")
+		logging.error("To run this task directly, supply a nomination_id.")
 
 # download and cache page for nomination
 

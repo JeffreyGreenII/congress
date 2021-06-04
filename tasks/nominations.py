@@ -1,7 +1,6 @@
 import logging
 
-import nomination_info
-import utils
+from tasks import nomination_info, utils
 from lxml import html
 
 
