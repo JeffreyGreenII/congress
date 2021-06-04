@@ -9,14 +9,21 @@ import urllib.parse
 from iso8601 import iso8601
 from lxml import etree, html
 
-from tasks import utils, vote_info
+from congress.tasks import vote_info
+from congress.utils import utils
+from congress.utils.congress import (
+    current_congress,
+    current_legislative_year,
+    get_congress_first_year,
+)
+from congress.utils.datetimes import local_time_now
 
 
 def run(options):
     vote_id = options.get("vote_id", None)
 
     if vote_id:
-        vote_chamber, vote_number, congress, session_year = utils.split_vote_id(vote_id)
+        _, _, congress, session_year = utils.split_vote_id(vote_id)
         to_fetch = [vote_id]
     else:
         congress = options.get("congress", None)
@@ -26,8 +33,8 @@ def run(options):
                 logging.error("If you provide a --congress, provide a --session year.")
                 return None
         else:
-            congress = utils.current_congress()
-            session_year = options.get("session", str(utils.current_legislative_year()))
+            congress = current_congress()
+            session_year = options.get("session", str(current_legislative_year()))
 
         chamber = options.get("chamber", None)
 
@@ -125,7 +132,7 @@ def vote_ids_for_house(congress, session_year, options):
 
 
 def vote_ids_for_senate(congress, session_year, options):
-    session_num = int(session_year) - utils.get_congress_first_year(int(congress)) + 1
+    session_num = int(session_year) - get_congress_first_year(int(congress)) + 1
 
     vote_ids = []
 
@@ -180,5 +187,5 @@ def should_process(vote_id, options):
         return True
 
     v = json.load(open(f))
-    now = utils.eastern_time_zone.localize(datetime.datetime.now())
+    now = local_time_now()
     return (now - iso8601.parse_date(v["date"])) < datetime.timedelta(days=3)

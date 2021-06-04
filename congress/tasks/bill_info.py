@@ -4,7 +4,9 @@ import re
 
 from lxml import etree
 
-from tasks import utils
+from congress.utils import utils
+from congress.utils.bills import extract_bills, split_bill_id
+from congress.utils.datetimes import format_datetime
 
 
 def create_govtrack_xml(bill, options):
@@ -22,7 +24,7 @@ def create_govtrack_xml(bill, options):
     root.set("session", bill["congress"])
     root.set("type", govtrack_type_codes[bill["bill_type"]])
     root.set("number", bill["number"])
-    root.set("updated", utils.format_datetime(bill["updated_at"]))
+    root.set("updated", format_datetime(bill["updated_at"]))
 
     def make_node(parent, tag, text, **attrs):
         if options.get("govtrack", False):
@@ -125,7 +127,7 @@ def create_govtrack_xml(bill, options):
             a.set("type", action["vote_type"])
             if action.get("roll") != None:
                 a.set("roll", action["roll"])
-            a.set("datetime", utils.format_datetime(action["acted_at"]))
+            a.set("datetime", format_datetime(action["acted_at"]))
             a.set("where", action["where"])
             a.set("result", action["result"])
             if action.get("suspension"):
@@ -142,7 +144,7 @@ def create_govtrack_xml(bill, options):
             a.clear()  # re-insert date between some of these attributes
             a.set("number", "%s-%s" % (bill["congress"], action["number"]))
             a.set("type", action["law"])
-            a.set("datetime", utils.format_datetime(action["acted_at"]))
+            a.set("datetime", format_datetime(action["acted_at"]))
             if action.get("status"):
                 a.set("state", action["status"])
         if action["type"] == "vetoed" and action.get("pocket"):
@@ -173,7 +175,7 @@ def create_govtrack_xml(bill, options):
     relatedbills = make_node(root, "relatedbills", None)
     for rb in bill["related_bills"]:
         if rb["type"] == "bill":
-            rb_bill_type, rb_number, rb_congress = utils.split_bill_id(rb["bill_id"])
+            rb_bill_type, rb_number, rb_congress = split_bill_id(rb["bill_id"])
             make_node(
                 relatedbills,
                 "bill",
@@ -535,7 +537,7 @@ def action_for(item):
         # U.S. Capitol (i.e. U.S. Eastern), we don't know the UTC offset which
         # is a part of how we used to serialize the time. So parse and then
         # use pytz (via format_datetime) to re-serialize.
-        acted_at = utils.format_datetime(
+        acted_at = format_datetime(
             datetime.datetime.strptime(
                 item.get("actionDate", "") + " " + item["actionTime"],
                 "%Y-%m-%d %H:%M:%S",
@@ -833,7 +835,7 @@ def activation_from(actions):
 def parse_bill_action(action_dict, prev_status, bill_id, title):
     """Parse a THOMAS bill action line. Returns attributes to be set in the XML file on the action line."""
 
-    bill_type, number, congress = utils.split_bill_id(bill_id)
+    bill_type, _, congress = split_bill_id(bill_id)
 
     line = action_dict["text"]
 
@@ -1325,7 +1327,7 @@ def parse_bill_action(action_dict, prev_status, bill_id, title):
             status = "REFERRED"
 
     # sweep the action line for bill IDs of related bills
-    bill_ids = utils.extract_bills(line, congress)
+    bill_ids = extract_bills(line, congress)
     bill_ids = [b for b in bill_ids if b != bill_id]
     if bill_ids and (len(bill_ids) > 0):
         action["bill_ids"] = bill_ids

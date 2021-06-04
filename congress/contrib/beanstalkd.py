@@ -22,7 +22,6 @@ You must include a 'beakstalk' section in config.yml with this structure
 
 import logging
 import sys
-import time
 import traceback
 from collections import Counter
 from functools import wraps

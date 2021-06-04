@@ -2,17 +2,19 @@ import logging
 
 from lxml import html
 
-from tasks import nomination_info, utils
+from congress.tasks import nomination_info
+from congress.utils import utils
+from congress.utils.congress import current_congress
 
 
 def run(options):
     nomination_id = options.get("nomination_id", None)
 
     if nomination_id:
-        nomination_type, number, congress = utils.split_nomination_id(nomination_id)
+        _, _, congress = utils.split_nomination_id(nomination_id)
         to_fetch = [nomination_id]
     else:
-        congress = options.get("congress", utils.current_congress())
+        congress = options.get("congress", current_congress())
         to_fetch = nomination_ids_for(congress, options)
         if not to_fetch:
             if options.get("fast", False):
@@ -98,7 +100,7 @@ def page_for(congress, options):
     post_options.update(options)
 
     # unused: never cache search listing
-    cache = page_cache_for(congress)
+    page_cache_for(congress)
 
     page = utils.download("http://thomas.loc.gov/cgi-bin/thomas", None, post_options)
     return page

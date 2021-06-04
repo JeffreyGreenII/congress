@@ -62,11 +62,11 @@ import os.path
 import subprocess
 import time
 
-import bill_info
-import bill_versions
-import fdsys
-import utils
 from lxml import etree
+
+from congress.tasks import bill_info, bills, govinfo
+from congress.utils import utils
+from congress.utils.datetimes import format_datetime
 
 
 def run(options):
@@ -308,10 +308,8 @@ def proc_statute_volume(path, options):
             "sources": sources,
         }
         utils.write(
-            json.dumps(
-                bill_version, sort_keys=True, indent=2, default=utils.format_datetime
-            ),
-            bill_versions.output_for_bill_version(bill_version_id),
+            json.dumps(bill_version, sort_keys=True, indent=2, default=format_datetime),
+            govinfo.output_for_bill_version(bill_version_id),
         )
 
         # Process the granule PDF.
@@ -319,7 +317,7 @@ def proc_statute_volume(path, options):
         # - Run "pdftotext -layout" to convert it to plain text and save it in the bill text location.
         pdf_file = path + "/" + sources[0]["access_id"] + "/document.pdf"
         if os.path.exists(pdf_file):
-            dst_path = fdsys.output_for_bill(
+            dst_path = bills.output_for_bill(
                 bill_data["bill_id"], "text-versions/" + version_code, is_data_dot=False
             )
             if options.get("linkpdf", False):

@@ -7,10 +7,12 @@ import time
 from datetime import datetime
 
 import lxml
-import utils
-from bills import output_for_bill
 from bs4 import BeautifulSoup
 from dateutil.relativedelta import MO, relativedelta
+
+from congress.utils import utils
+from congress.utils.bills import output_for_bill
+from congress.utils.datetimes import format_datetime
 
 # Parsing data from the House' upcoming floor feed, at
 # https://docs.house.gov/floor/
@@ -55,9 +57,7 @@ def run_for_week(for_the_week, options):
         return
 
     output_file = "%s/upcoming_house_floor/%s.json" % (utils.data_dir(), for_the_week)
-    output = json.dumps(
-        house_floor, sort_keys=True, indent=2, default=utils.format_datetime
-    )
+    output = json.dumps(house_floor, sort_keys=True, indent=2, default=format_datetime)
     utils.write(output, output_file)
 
     logging.warn(
@@ -274,9 +274,7 @@ def fetch_floor_week(for_the_week, options):
             except OSError:
                 pass  # directory exists
             utils.write(
-                json.dumps(
-                    bill, sort_keys=True, indent=2, default=utils.format_datetime
-                ),
+                json.dumps(bill, sort_keys=True, indent=2, default=format_datetime),
                 text_data_path,
             )
 

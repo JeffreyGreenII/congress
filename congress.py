@@ -1,6 +1,6 @@
 import click
 
-from tasks import (
+from congress.tasks import (
     bills,
     committee_meetings,
     govinfo,
@@ -136,7 +136,7 @@ def get_vote(vote_id):
 )
 @click.option("--limit", default=None, help="Limit number of votes returned.")
 def get_votes(session, chamber, limit):
-    """Get votes."""
+    """Get bills."""
     votes.run(
         {
             "limit": limit,

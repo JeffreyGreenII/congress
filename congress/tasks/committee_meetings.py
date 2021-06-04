@@ -15,7 +15,11 @@ import lxml.etree
 import mechanize
 import requests
 
-from tasks import utils
+from congress.utils import utils
+from congress.utils.congress import (
+    congress_from_legislative_year,
+    current_legislative_year,
+)
 
 # to get text files their is a new dependency; you need to have pdftotext.
 # On Ubuntu, apt-get install poppler-utils. On OS X, install it via MacPorts
@@ -147,9 +151,7 @@ def fetch_senate_committee_meetings(committees, options):
             guid = str(uuid.uuid4())
 
         # Scrape the topic text for mentions of bill numbers.
-        congress = utils.congress_from_legislative_year(
-            utils.current_legislative_year(occurs_at)
-        )
+        congress = congress_from_legislative_year(current_legislative_year(occurs_at))
         bills = []
         bill_number_re = re.compile(
             r"(hr|s|hconres|sconres|hjres|sjres|hres|sres)\s?(\d+)", re.I
@@ -774,7 +776,7 @@ def save_file(url, event_id):
             with open(file_name, "wb") as document_file:
                 document_file.write(r.content)
             if ".pdf" in file_name:
-                text_doc = text_from_pdf(file_name)
+                text_from_pdf(file_name)
             return True
         except:
             print("Failed to save- %s" % (url))

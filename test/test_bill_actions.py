@@ -1,6 +1,6 @@
 import unittest
 
-from tasks import bill_info
+from congress.tasks import bill_info
 
 # parsing various kinds of action text to extract metadata and establish state
 

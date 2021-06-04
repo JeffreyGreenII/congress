@@ -16,7 +16,9 @@ from email.mime.text import MIMEText
 
 import scrapelib
 from lxml import etree
-from pytz import timezone
+
+from congress.utils.congress import congress_from_legislative_year
+from congress.utils.datetimes import format_datetime
 
 # read in an opt-in config file for changing directories and supplying email settings
 # returns None if it's not there, and this should always be handled gracefully
@@ -29,124 +31,9 @@ if os.path.exists(path):
 else:
     config = None
 
-
-eastern_time_zone = timezone("US/Eastern")
-
 # scraper should be instantiated at class-load time, so that it can rate limit appropriately
 scraper = scrapelib.Scraper(requests_per_minute=120, retry_attempts=3)
 scraper.user_agent = "unitedstates/congress (https://github.com/unitedstates/congress)"
-
-
-def format_datetime(obj):
-    if isinstance(obj, datetime.datetime):
-        return eastern_time_zone.localize(obj.replace(microsecond=0)).isoformat()
-    elif isinstance(obj, datetime.date):
-        return obj.isoformat()
-    elif isinstance(obj, str):
-        return obj
-    else:
-        return None
-
-
-def current_congress():
-    year = current_legislative_year()
-    return congress_from_legislative_year(year)
-
-
-def congress_from_legislative_year(year):
-    return ((year + 1) // 2) - 894
-
-
-def current_legislative_year(date=None):
-    if not date:
-        date = datetime.datetime.now()
-
-    year = date.year
-
-    if date.month == 1:
-        if date.day == 1 or date.day == 2:
-            return date.year - 1
-        elif date.day == 3 and date.hour < 12:
-            return date.year - 1
-        else:
-            return date.year
-    else:
-        return date.year
-
-
-def get_congress_first_year(congress):
-    return ((int(congress) + 894) * 2) - 1
-
-
-# get the three calendar years that the Congress extends through (Jan 3 to Jan 3).
-
-
-def get_congress_years(congress):
-    y1 = get_congress_first_year(congress)
-    return (y1, y1 + 1, y1 + 2)
-
-
-# Get a list of Congresses associated with a particular term.
-# XXX: This can be highly unreliable and may be deeply flawed.
-# XXX: This would be much simpler if we already included Congresses in the data.
-
-
-def get_term_congresses(term):
-    start_year = int(format_datetime(term["start"])[:4])
-    end_year = int(format_datetime(term["end"])[:4])
-
-    start_congress = congress_from_legislative_year(start_year)
-    start_congress_years = get_congress_years(start_congress)
-    start_congress_first_year = start_congress_years[0]
-
-    if term["type"] in ["sen"]:
-        end_congress_years = get_congress_years(start_congress + 2)
-        congresses = [start_congress, start_congress + 1, start_congress + 2]
-    elif term["type"] in ["prez", "viceprez"] or term["state"] in ["PR"]:
-        end_congress_years = get_congress_years(start_congress + 1)
-        congresses = [start_congress, start_congress + 1]
-    else:
-        end_congress_years = start_congress_years
-        congresses = [start_congress]
-
-    end_congress_last_year = end_congress_years[2]
-
-    valid_congresses = (start_year >= start_congress_first_year) and (
-        end_year <= end_congress_last_year
-    )
-
-    #  if not valid_congresses:
-    #    print(term["type"], start_congress, (start_year, start_congress_first_year), (end_year, end_congress_last_year))
-
-    return congresses if valid_congresses else []
-
-
-# bill_type, bill_number, congress
-
-
-def split_bill_id(bill_id):
-    return re.match("^([a-z]+)(\d+)-(\d+)$", bill_id).groups()
-
-
-# "hjres1234-115"
-
-
-def build_bill_id(bill_type, bill_number, congress):
-    return "%s%s-%s" % (bill_type, bill_number, congress)
-
-
-# bill_type, bill_number, congress, version_code
-
-
-def split_bill_version_id(bill_version_id):
-    return re.match("^([a-z]+)(\d+)-(\d+)-([a-z\d]+)$", bill_version_id).groups()
-
-
-# "hjres1234-115-enr"
-
-
-def build_bill_version_id(bill_type, bill_number, congress, version_code):
-    return "%s%s-%s-%s" % (bill_type, bill_number, congress, version_code)
 
 
 def split_vote_id(vote_id):
@@ -163,7 +50,7 @@ def split_vote_id(vote_id):
 def split_nomination_id(nomination_id):
     try:
         return re.match("^([A-z]{2})([\d-]+)-(\d+)$", nomination_id).groups()
-    except Exception as e:
+    except Exception:
         logging.error("Unabled to parse %s" % nomination_id)
         return (None, None, None)
 
@@ -472,26 +359,6 @@ def unescape(text):
     return text
 
 
-def extract_bills(text, session):
-    bill_ids = []
-
-    p = re.compile(
-        "((S\.|H\.)(\s?J\.|\s?R\.|\s?Con\.| ?)(\s?Res\.)*\s?\d+)", flags=re.IGNORECASE
-    )
-    bill_matches = p.findall(text)
-
-    if bill_matches:
-        for b in bill_matches:
-            bill_text = "%s-%s" % (
-                b[0].lower().replace(" ", "").replace(".", "").replace("con", "c"),
-                session,
-            )
-            if bill_text not in bill_ids:
-                bill_ids.append(bill_text)
-
-    return bill_ids
-
-
 # uses config values if present
 
 
@@ -615,10 +482,9 @@ def direct_yaml_load(filename):
     import yaml
 
     try:
-        from yaml import CDumper as Dumper
         from yaml import CLoader as Loader
     except ImportError:
-        from yaml import Dumper, Loader
+        from yaml import Loader
     return yaml.load(open(filename), Loader=Loader)
 
 

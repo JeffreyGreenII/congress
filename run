@@ -7,7 +7,7 @@ import os
 import socket
 import sys
 
-from tasks import utils
+from congress.utils import utils
 
 socket.setdefaulttimeout(10)
 

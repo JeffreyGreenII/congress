@@ -4,7 +4,9 @@ import os
 
 import xmltodict
 
-from tasks import amendment_info, bill_info, govinfo, utils
+from congress.tasks import amendment_info, bill_info, govinfo
+from congress.utils import utils
+from congress.utils.bills import build_bill_id, output_for_bill, split_bill_id
 
 
 def run(options):
@@ -251,33 +253,13 @@ def _fixup_top_term_case(term):
     return term.capitalize()
 
 
-def build_bill_id(bill_type, bill_number, congress):
-    return "%s%s-%s" % (bill_type, bill_number, congress)
-
-
 def billstatus_url_for(bill_id):
-    bill_type, bill_number, congress = utils.split_bill_id(bill_id)
+    bill_type, bill_number, congress = split_bill_id(bill_id)
     return (
         govinfo.BULKDATA_BASE_URL
         + "BILLSTATUS/{0}/{1}/BILLSTATUS-{0}{1}{2}.xml".format(
             congress, bill_type, bill_number
         )
-    )
-
-
-def output_for_bill(bill_id, format, is_data_dot=True):
-    bill_type, number, congress = utils.split_bill_id(bill_id)
-    if is_data_dot:
-        fn = "data.%s" % format
-    else:
-        fn = format
-    return "%s/%s/bills/%s/%s%s/%s" % (
-        utils.data_dir(),
-        congress,
-        bill_type,
-        bill_type,
-        number,
-        fn,
     )
 
 

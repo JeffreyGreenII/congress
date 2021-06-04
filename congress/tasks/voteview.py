@@ -5,12 +5,14 @@ import logging
 import re
 import time
 
-import utils
-from vote_info import output_vote
+from congress.tasks.vote_info import output_vote
+from congress.utils import utils
+from congress.utils.congress import current_congress
+from congress.utils.datetimes import format_datetime
 
 # load some hard-coded codes
 special_vote_options = {}
-for rec in csv.reader(open("tasks/voteview_codedoptions.csv")):
+for rec in csv.reader(open("options/voteview_codedoptions.csv")):
     if rec[0] == "vote date":
         continue  # header
     special_vote_options[rec[1]] = (
@@ -21,7 +23,7 @@ for rec in csv.reader(open("tasks/voteview_codedoptions.csv")):
 
 def run(options):
     congress = options.get("congress", None)
-    congress = int(congress) if congress else utils.current_congress()
+    congress = int(congress) if congress else current_congress()
 
     chamber = options.get("chamber", None)
 
@@ -310,7 +312,7 @@ def parse_rollcall_dtl_date(rollcall_dtl_date):
         else:
             break
 
-    formatted_date = utils.format_datetime(parsed_date)
+    formatted_date = format_datetime(parsed_date)
 
     return formatted_date[:10] if formatted_date is not None else formatted_date
 

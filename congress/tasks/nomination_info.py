@@ -5,7 +5,8 @@ from datetime import datetime
 
 from lxml.html import fromstring
 
-from tasks import utils
+from congress.utils import utils
+from congress.utils.datetimes import format_datetime
 
 # can be run on its own, just require a nomination_id (e.g. PN2094-112)
 
@@ -159,7 +160,7 @@ def parse_nomination(nomination_id, body, options):
 
                     try:
                         name = re.search("(.+?),", name).groups()[0]
-                    except Exception as e:
+                    except Exception:
                         raise Exception("Couldn't parse nominee entry: %s" % name)
 
                     # Some begin "One nomination,...", so 'List of Nominees' will get it
@@ -266,6 +267,6 @@ def output_nomination(nomination, options):
 
     # output JSON - so easy!
     utils.write(
-        json.dumps(nomination, sort_keys=True, indent=2, default=utils.format_datetime),
+        json.dumps(nomination, sort_keys=True, indent=2, default=format_datetime),
         output_for_nomination(nomination["nomination_id"], "json"),
     )

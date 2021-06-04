@@ -4,9 +4,11 @@ import re
 
 from lxml import etree
 
-from tasks import utils
-from tasks.bill_info import action_for
-from tasks.bill_info import sponsor_for as sponsor_for_bill
+from congress.tasks.bill_info import action_for
+from congress.tasks.bill_info import sponsor_for as sponsor_for_bill
+from congress.utils import utils
+from congress.utils.bills import build_bill_id, split_bill_id
+from congress.utils.datetimes import format_datetime
 
 
 def process_amendment(amdt_data, bill_id, options):
@@ -17,7 +19,7 @@ def process_amendment(amdt_data, bill_id, options):
 
     # output JSON - so easy!
     utils.write(
-        json.dumps(amdt, sort_keys=True, indent=2, default=utils.format_datetime), path
+        json.dumps(amdt, sort_keys=True, indent=2, default=format_datetime), path
     )
 
     with open(output_for_amdt(amdt["amendment_id"], "xml"), "wb") as xml_file:
@@ -96,7 +98,7 @@ def create_govtrack_xml(amdt, options):
     root.set("session", amdt["congress"])
     root.set("chamber", amdt["amendment_type"][0])
     root.set("number", str(amdt["number"]))
-    root.set("updated", utils.format_datetime(amdt["updated_at"]))
+    root.set("updated", format_datetime(amdt["updated_at"]))
 
     make_node = utils.make_node
 
@@ -172,7 +174,6 @@ def build_amendment_id(amdt_type, amdt_number, congress):
 
 
 def amends_bill_for(amends_bill):
-    from bills import build_bill_id
 
     bill_id = build_bill_id(
         amends_bill["type"].lower(), amends_bill["number"], amends_bill["congress"]
@@ -301,7 +302,7 @@ def sponsor_for(sponsor, amendment_type):
 
 
 def output_for_amdt(amendment_id, format):
-    amendment_type, number, congress = utils.split_bill_id(amendment_id)
+    amendment_type, number, congress = split_bill_id(amendment_id)
     return "%s/%s/amendments/%s/%s%s/%s" % (
         utils.data_dir(),
         congress,

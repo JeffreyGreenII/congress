@@ -8,7 +8,8 @@ import time
 
 from lxml import etree
 
-from tasks import utils
+from congress.utils import utils
+from congress.utils.congress import get_congress_first_year
 
 
 def fetch_vote(vote_id, options):
@@ -25,9 +26,7 @@ def fetch_vote(vote_id, options):
         )
     else:
         session_num = (
-            int(vote_session_year)
-            - utils.get_congress_first_year(int(vote_congress))
-            + 1
+            int(vote_session_year) - get_congress_first_year(int(vote_congress)) + 1
         )
         url = "http://www.senate.gov/legislative/LIS/roll_call_votes/vote%d%d/vote_%d_%d_%05d.xml" % (
             int(vote_congress),
@@ -97,7 +96,7 @@ def output_vote(vote, options, id_type=None):
 
     # output JSON - so easy!
     utils.write(
-        json.dumps(vote, sort_keys=True, indent=2, default=utils.format_datetime),
+        json.dumps(vote, sort_keys=True, indent=2, default=format_datetime),
         output_for_vote(vote["vote_id"], "json"),
         options=options,
     )
@@ -120,8 +119,8 @@ def output_vote(vote, options, id_type=None):
     else:
         root.set("source", "house.gov" if vote["chamber"] == "h" else "senate.gov")
 
-    root.set("datetime", utils.format_datetime(vote["date"]))
-    root.set("updated", utils.format_datetime(vote["updated_at"]))
+    root.set("datetime", format_datetime(vote["date"]))
+    root.set("updated", format_datetime(vote["updated_at"]))
 
     def get_votes(option):
         return len(vote["votes"].get(option, []))

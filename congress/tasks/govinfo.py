@@ -48,7 +48,9 @@ import zipfile
 import rtyaml
 from lxml import etree, html
 
-from tasks import utils
+from congress.utils import utils
+from congress.utils.bills import output_for_bill, split_bill_version_id
+from congress.utils.datetimes import format_datetime
 
 # globals
 GOVINFO_BASE_URL = "https://www.govinfo.gov/"
@@ -553,7 +555,6 @@ def get_output_path(collection, package_name, options):
         )
         if not bill_and_ver:
             return None  # congress number does not match options["congress"]
-        from bills import output_for_bill
 
         bill_id, version_code = bill_and_ver
         return output_for_bill(
@@ -651,9 +652,7 @@ def mirror_bulkdata_file(collection, url, item_path, lastmod, options):
 def extract_bill_version_metadata(package_name, text_path):
     bill_version_id = get_bill_id_for_package(package_name)
 
-    bill_type, number, congress, version_code = utils.split_bill_version_id(
-        bill_version_id
-    )
+    _, _, _, version_code = split_bill_version_id(bill_version_id)
 
     bill_version = {
         "bill_version_id": bill_version_id,
@@ -682,17 +681,13 @@ def extract_bill_version_metadata(package_name, text_path):
     )
 
     utils.write(
-        json.dumps(
-            bill_version, sort_keys=True, indent=2, default=utils.format_datetime
-        ),
+        json.dumps(bill_version, sort_keys=True, indent=2, default=format_datetime),
         output_for_bill_version(bill_version_id),
     )
 
 
 def output_for_bill_version(bill_version_id):
-    bill_type, number, congress, version_code = utils.split_bill_version_id(
-        bill_version_id
-    )
+    bill_type, number, congress, version_code = split_bill_version_id(bill_version_id)
     return "%s/%s/bills/%s/%s%s/text-versions/%s/data.json" % (
         utils.data_dir(),
         congress,
