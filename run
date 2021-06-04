@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
-from tasks import utils
 import importlib
 import logging
 import os
 # set global HTTP timeouts to 10 seconds
 import socket
 import sys
+
+from tasks import utils
 
 socket.setdefaulttimeout(10)
 
